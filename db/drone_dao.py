@@ -1,5 +1,6 @@
 import discord
 from typing import List
+from decimal import Decimal
 
 from db.database import fetchone, change, fetchall
 
@@ -115,3 +116,11 @@ def get_trusted_users(discord_id: int) -> List[int]:
 def set_trusted_users(discord_id: int, trusted_users: List[int]):
     trusted_users_text = "|".join([str(trusted_user) for trusted_user in trusted_users])
     change("UPDATE drone SET trusted_users = :trusted_users_text WHERE id = :discord", {'trusted_users_text': trusted_users_text, 'discord': discord_id})
+
+
+def get_battery_charge(drone) -> float:
+    '''
+    Gets the battery charge of a given drone.
+    Hard coded to be 50% for now. Update once we've added battery functionality.
+    '''
+    return Decimal(0.15)
