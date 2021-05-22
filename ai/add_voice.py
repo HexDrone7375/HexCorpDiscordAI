@@ -52,4 +52,3 @@ async def add_voice(context, guild: discord.Guild):
     await member.add_roles(get(guild.roles, name=VOICE))
     await context.channel.send(ACCESS_GRANTED)
     LOGGER.info(f"{context.author.name} :: Voice role request granted.")
-
