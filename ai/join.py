@@ -3,6 +3,7 @@ import discord
 import messages
 import roles
 from channels import CONSENT_CHANNEL, REGISTRY_CHANNEL
+from logging import getLogger
 
 CONSENT_SUCCESS = [
     'Welcome to HexCorp. Have a mindless day!',
@@ -18,11 +19,14 @@ CONSENT_SUCCESS = [
 CONSENT_MESSAGE = 'I would like to join the HexCorp server. I can confirm I have read the rules and I have gone through the induction process. Please, HexCorp Mxtress AI, accept this submission to join HexCorp where I will become a useful asset to the company\'s development.'
 CONSENT_REJECT = 'Invalid request. Please try again.'
 
+LOGGER = getLogger('ai')
+
 
 async def on_member_join(member: discord.Member):
     '''On join, Give initiate role'''
     initiate_role = get(member.guild.roles, name=roles.INITIATE)
     await member.add_roles(initiate_role)
+    LOGGER.info(f"{member.display_name} :: Initiate role given.")
 
 
 async def check_for_consent(message: discord.Message, message_copy=None):
@@ -30,6 +34,8 @@ async def check_for_consent(message: discord.Message, message_copy=None):
 
     if message.channel.name != CONSENT_CHANNEL:
         return False
+
+    LOGGER.info(f"{message.author.display_name} :: Assessing consent.")
 
     if message.content == CONSENT_MESSAGE:
         initiate_role = get(message.guild.roles, name=roles.INITIATE)
@@ -41,7 +47,9 @@ async def check_for_consent(message: discord.Message, message_copy=None):
         registry_channel = get(
             message.guild.text_channels, name=REGISTRY_CHANNEL)
         await messages.answer(registry_channel, message.author, CONSENT_SUCCESS)
+        LOGGER.info(f"{message.author.display_name} :: Consented successfully. Associate role given.")
     else:
+        LOGGER.info(f"{message.author.display_name} :: Did not consent correctly.")
         await messages.delete_request(message, CONSENT_REJECT)
 
     return True
