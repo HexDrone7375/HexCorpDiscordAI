@@ -97,10 +97,6 @@ async def optimize_speech(message: discord.Message, message_copy):
     if not is_drone(message.author):
         return False
 
-    # No optimization in the moderation channels
-    if message.channel.category.name in [HEXCORP_CONTROL_TOWER_CATEGORY, MODERATION_CATEGORY]:
-        return False
-
     # Determine message type
     status_type, code_match, address_match = get_status_type(message_copy.content)
 
