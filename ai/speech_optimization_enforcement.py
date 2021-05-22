@@ -23,6 +23,8 @@ async def enforce_speech_optimization(message, message_copy):
         # Message author is not an optimized drone. Skip.
         return False
 
+    LOGGER.info(f"{message.author.display_name} :: Assessing speech optimization conformity.")
+
     # Check if message is in any blacklists (specific channels + mantra channel if message is correct mantra).
     drone_id = get_id(message.author.display_name)
     acceptable_mantra = f"{drone_id} :: {Mantra_Handler.current_mantra}"
@@ -46,4 +48,5 @@ async def enforce_speech_optimization(message, message_copy):
         return True
 
     # Message has not been found to violate any rules.
+    LOGGER.info(f"{message.author.display_name} :: Message follows speech optimization rules.")
     return False
