@@ -31,17 +31,17 @@ async def enforce_speech_optimization(message, message_copy):
         (message.channel.name in (ORDERS_REPORTING, ORDERS_COMPLETION, MODERATION_CHANNEL, MODERATION_LOG)),
         (message.channel.category.name == MODERATION_CATEGORY)
     ]):
-        LOGGER.info("Skipping enforced optimization in blacklisted channel.")
+        LOGGER.info(f"{message.author.display_name} :: Message will not be optimized in blocked channel.")
         return False
 
+    LOGGER.info(f"{message.author_display_name} :: Removing message attachments due to optimization.")
     # Strip message attachments of optimized drone.
     message_copy.attachments = []
 
     status_type, _, _ = get_status_type(message_copy.content)
 
     if status_type not in (StatusType.PLAIN, StatusType.ADDRESS_BY_ID_PLAIN) or status_type == StatusType.NONE:
-        LOGGER.info("Optimized drone has posted an informative or otherwise inappropriate status message. Deleting.")
-        # Optimized drone posted an informative status message. Delete.
+        LOGGER.info(f"{message.author_display_name} :: Drone did not conform to speech optimization. Deleting message.")
         await message.delete()
         return True
 
