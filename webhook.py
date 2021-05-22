@@ -17,7 +17,7 @@ async def proxy_message_by_webhook(message_content, message_username=None, messa
         webhook = await get_webhook_for_channel(channel)
 
     if webhook is None:
-        LOGGER.warn(f"Failed to retrieve a webhook. Could not proxy message: '{message_content}'")
+        LOGGER.warn(f"{message_username} :: Failed to retrieve a webhook. Could not proxy message.")
         return False
 
     await webhook.send(message_content, avatar_url=message_avatar, username=message_username, files=message_attachments, embed=embed)
@@ -44,9 +44,9 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
     avatar_differs = original.author.avatar_url != copy.avatar_url
     attachments_differ = original.attachments != copy.attachments
     if any([content_differs, display_name_differs, avatar_differs, attachments_differ]):
-        LOGGER.info("Proxying altered message.")
+        LOGGER.info(f"{original.author.display_name} :: Message different from original. Proxying.")
 
-        LOGGER.info("Converting all attachments")
+        LOGGER.info(f"{original.author.display_name} :: Converting {len(copy.attachments)} attachments")
         # Convert available Attachment objects into File objects.
         attachments_as_files = []
         for attachment in copy.attachments:
@@ -54,10 +54,11 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
                 attachments_as_files.append(attachment)
             else:
                 attachments_as_files.append(discord.File(io.BytesIO(await attachment.read()), filename=attachment.filename))
-        LOGGER.info("Attachments converted.")
+        LOGGER.info(f"{original.author.display_name} :: Attachments converted.")
 
         embed = None
         if original.reference:
+            LOGGER.info(f"{original.author.display_name} :: User replied to message. Creating reply embed.")
             referenced_message: discord.Message = original.reference.resolved
             reply_text = f"[Reply to]({referenced_message.jump_url}): {referenced_message.content}"
             embed = discord.Embed(color=0xff66ff, description=reply_text)
@@ -71,3 +72,7 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
                                        channel=original.channel,
                                        webhook=None,
                                        embed=embed)
+        LOGGER.info(f"{original.author.display_name} :: Message proxied.")
+        return
+    LOGGER.info(f"{original.author.display_name} :: Message unchanged. Not proxying.")
+    return
