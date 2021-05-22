@@ -1,4 +1,3 @@
-from channels import HEXCORP_CONTROL_TOWER_CATEGORY, MODERATION_CATEGORY
 import logging
 import re
 import discord
@@ -103,13 +102,16 @@ async def optimize_speech(message: discord.Message, message_copy):
     if status_type == StatusType.NONE:
         return False
 
+    LOGGER.info(f"{message.author.display_name} :: Drone is using HDP. Status type: {status_type}")
+
     # Confirm the status starts with the drone's ID
     if code_match.group(2) != get_id(message.author.display_name):
-        LOGGER.info("Status did not match drone ID.")
+        LOGGER.info(f"{message.author.display_name} :: Status did not match drone ID.")
         await message.delete()
         return True
 
     # Build message based on status type.
     message_copy.content = build_status_message(status_type, code_match, address_match)
+    LOGGER.info(f"{message.author.display_name} :: HDP message converted :: {message_copy.content}")
 
     return False
