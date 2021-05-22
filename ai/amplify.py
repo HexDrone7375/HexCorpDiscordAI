@@ -7,6 +7,9 @@ from discord.ext.commands import Cog, command, guild_only
 from resources import DRONE_AVATAR
 from roles import HIVE_MXTRESS, has_role
 from ai.identity_enforcement import identity_enforcable
+from logging import getLogger
+
+LOGGER = getLogger('ai')
 
 
 class AmplificationCog(Cog):
@@ -17,10 +20,15 @@ class AmplificationCog(Cog):
         '''
         Allows the Hive Mxtress to speak through other drones.
         '''
-        member_drones = id_converter.convert_ids_to_members(context.guild, drones) | set(context.message.mentions)
+
+        LOGGER.info(f"{context.author.display_name} :: Amplification command triggered. :: {message}")
 
         if not has_role(context.author, HIVE_MXTRESS) or context.channel.name != OFFICE:
             return False
+
+        member_drones = id_converter.convert_ids_to_members(context.guild, drones) | set(context.message.mentions)
+
+        LOGGER.info(f"{context.author.display_name} :: Amplifying through {len(member_drones)} to {target_channel.name}")
 
         channel_webhook = await webhook.get_webhook_for_channel(target_channel)
 
@@ -29,4 +37,5 @@ class AmplificationCog(Cog):
                                                    message_username=drone.display_name,
                                                    message_avatar=drone.avatar_url if not identity_enforcable(drone, channel=target_channel) else DRONE_AVATAR,
                                                    webhook=channel_webhook)
+            LOGGER.info(f"{context.author.display_name} :: Amplified message through {drone.display_name}")
         return True
