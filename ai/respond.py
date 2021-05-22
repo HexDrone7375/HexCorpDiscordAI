@@ -80,7 +80,7 @@ async def respond_to_question(message: discord.Message, message_copy=None):
     if not is_question(message):
         return False
 
-    LOGGER.debug('Message is a valid question.')
+    LOGGER.info(f"{message.author.display_name} :: Asked the Hive Mxtress AI a question.")
 
     # different roles have different reponses
     if has_role(message.author, HIVE_MXTRESS):
@@ -92,5 +92,6 @@ async def respond_to_question(message: discord.Message, message_copy=None):
         await messages.answer(message.channel, message.author, ASSOCIATE_RESPONSES)
     elif has_role(message.author, DRONE):
         await messages.answer(message.channel, message.author, DRONE_RESPONSES)
+    LOGGER.info(f"Hive Mxtress AI :: Responded to {message.author.display_name}'s question.")
 
     return True
