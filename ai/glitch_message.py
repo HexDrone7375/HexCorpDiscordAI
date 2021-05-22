@@ -28,7 +28,7 @@ custom_emoji_regex = re.compile(r'<:(.*?):\d{18}>')
 
 def glitch_text(message: str, glitch_amount=45) -> str:
 
-    LOGGER.info(f"Glitching message: {message}")
+    LOGGER.debug(f"Original message: {message}")
 
     glitch_percentage = glitch_amount / 100
 
@@ -55,7 +55,7 @@ def glitch_text(message: str, glitch_amount=45) -> str:
     LOGGER.debug(f"Message list without custom emojis: {message_list}")
 
     if message_list == []:
-        LOGGER.info("Not glitching message (message empty).")
+        LOGGER.debug("Not glitching message (message empty).")
         return ''.join(emoji for emoji, index in custom_emojis)
 
     # Flip case
@@ -120,13 +120,11 @@ async def glitch_if_applicable(message: discord.Message, message_copy: MessageCo
     elif is_battery_powered(message.author) and get_battery_percent_remaining(message.author) < 30:
         glitch_amount = (MAX_GLITCH_AMOUNT - get_battery_percent_remaining(message.author)) * 2
     else:
-        LOGGER.info("Not glitching message (drone is neither glitched nor low battery).")
         return False
 
-    LOGGER.info(f"Glitching message for {message.author.display_name}, glitch amount: {glitch_amount}")
+    LOGGER.info(f"{message.author.display_name} :: Glitching message. :: Glitch amount: {glitch_amount}")
 
     message_copy.content = glitch_text(message_copy.content, glitch_amount)
-
     message_copy.attachments = await glitch_images(message.attachments, glitch_amount)
 
     return False

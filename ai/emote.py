@@ -24,10 +24,15 @@ class EmoteCog(Cog):
         '''
         Let the AI say things using emotes.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Emote command invoked.")
+
         if context.channel.name not in DRONE_HIVE_CHANNELS:
             reply = generate_big_text(context.channel, sentence)
             if reply:
+                LOGGER.info(f"{context.author.display_name} :: Emote message generated (Length: {len(reply)}")
                 await context.send(reply)
+                LOGGER.info(f"{context.author.display_name} :: Emote message sent.")
 
 
 def clean_sentence(sentence):
@@ -36,10 +41,6 @@ def clean_sentence(sentence):
 
 
 def generate_big_text(channel: discord.TextChannel, sentence):
-
-    LOGGER.debug("In generate_big_text function.")
-
-    LOGGER.debug("Sanatizing sentence of custom emojis.")
 
     sentence = clean_sentence(sentence)
 
@@ -64,7 +65,6 @@ def generate_big_text(channel: discord.TextChannel, sentence):
             reply += str(emoji)
 
     message_length = len(reply)
-    LOGGER.debug(f"About to send big-text message of length {message_length}")
 
     if message_length > 0 and message_length <= 2000:
         LOGGER.info(f"Sending big-text message of length {message_length} and content '{sentence}'")
@@ -73,5 +73,5 @@ def generate_big_text(channel: discord.TextChannel, sentence):
         LOGGER.info("big-text message was too long to send.")
         return None
     else:
-        LOGGER.debug("big-text request message contained no acceptable content.")
+        LOGGER.info("big-text request message contained no acceptable content.")
         return None
