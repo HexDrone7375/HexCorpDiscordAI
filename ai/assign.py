@@ -12,12 +12,15 @@ from db.drone_dao import insert_drone, get_used_drone_ids
 from db.data_objects import Drone
 from bot_utils import get_id
 from resources import HIVE_MXTRESS_USER_ID
+from logging import getLogger
 
 ASSIGNMENT_MESSAGE = 'I submit myself to the HexCorp Drone Hive.'
 ASSIGNMENT_ANSWER = 'Assigned.'
 ASSIGNMENT_REJECT = 'Invalid request. Please try again.'
 
 RESERVED_IDS = ['0006', '0000', '0001', '0002', '0003', '0004', '0005', '6969', '0420', '4200', '3141', '0710', '7100', '1488']
+
+LOGGER = getLogger('ai')
 
 
 def roll_id() -> str:
@@ -30,17 +33,21 @@ async def check_for_assignment_message(message: discord.Message, message_copy=No
     if message.channel.name != ASSIGNMENT_CHANNEL:
         return False
 
+    LOGGER.info(f"{message.author.display_name} :: Member is attempting to join the Hive.")
+
     # member has not been on the server for the required period
     if message.author.joined_at > datetime.now() - timedelta(hours=24):
         await message.channel.send("Invalid request, associate must have existed on the server for at least 24 hours before dronification.")
+        LOGGER.info(f"{message.author.display_name} :: Member has not existed on guild for long enough to join Hive.")
         return False
 
     # if the message is correct for being added, yay! if not, delete the message and let them know its bad
     if message.content == ASSIGNMENT_MESSAGE:
+        LOGGER.info(f"{message.author.display_name} :: Member is joining Hive.")
         await create_drone(message.guild, message.author, message.channel)
     else:
+        LOGGER.info(f"{message.author.display_name} :: Invalid Hive join request message.")
         await messages.delete_request(message, ASSIGNMENT_REJECT)
-
     return True
 
 
@@ -58,6 +65,7 @@ async def create_drone(guild: discord.Guild,
     if assigned_id is not None:
         if assigned_id in used_ids:  # make sure display name number doesnt conflict
             await feedback_channel.send(f'{target.mention}: ID {assigned_id} present in current nickname is already assigned to a drone. Please choose a different ID or contact Hive Mxtress.')
+            LOGGER.info(f"{target.display_name} :: Could not become drone. ID conflict :: {assigned_id}")
             return True
     else:
         assigned_id = roll_id()
@@ -66,10 +74,14 @@ async def create_drone(guild: discord.Guild,
 
     assigned_nick = f'⬡-Drone #{assigned_id}'
 
+    LOGGER.info(f"{target.display_name} :: Drone ID assigned. :: {assigned_id}")
+
     # give them the drone role
     await target.remove_roles(associate_role)
     await target.add_roles(drone_role)
     await target.edit(nick=assigned_nick)
+
+    LOGGER.info(f"{assigned_id} :: Associated role removed. Drone role added.")
 
     trusted_users = (additional_trusted_users or []) + [HIVE_MXTRESS_USER_ID]
     # exclude self from trusted users list
@@ -79,4 +91,5 @@ async def create_drone(guild: discord.Guild,
     # add new drone to DB
     new_drone = Drone(target.id, assigned_id, False, False, '|'.join(trusted_users), datetime.now(), temporary_until=temporary_until)
     insert_drone(new_drone)
+    LOGGER.info(f"{assigned_id} :: Drone {'temporarily' if temporary_until is not None else ''} inserted into database.")
     await feedback_channel.send(f'{target.mention}: {ASSIGNMENT_ANSWER}')
