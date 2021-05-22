@@ -14,8 +14,9 @@ async def check_if_prepending_necessary(message: discord.Message, message_copy=N
         if message.content.startswith(f"{drone_id} :: ") or message.content.startswith(COMMAND_PREFIX):
             return False
         else:
-            LOGGER.info("Deleting message that did not begin with ID prependment.")
+            LOGGER.info(f"{message.author.display_name} :: Drone did not ID prepend when required.")
             await message.delete()
+            LOGGER.info(f"{message.author.display_name} :: Message deleted.")
             return True
     else:
         return False
