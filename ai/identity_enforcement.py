@@ -16,12 +16,14 @@ async def enforce_identity(message: discord.Message, message_copy):
     return False
 
 
-def identity_enforcable(member: discord.Member, channel=None):
+def identity_enforcable(member: discord.Member, channel):
     '''
-    Takes a context or channel object and uses it to check if the identity of a user should be enforced.
+    Takes a channel object and uses it to check if the identity of a user should be enforced.
     '''
 
-    if channel is not None:
-        return is_drone(member) and (channel.name in DRONE_HIVE_CHANNELS or is_identity_enforced(member)) and channel.category.name not in [HEXCORP_CONTROL_TOWER_CATEGORY, MODERATION_CATEGORY]
+    if is_drone(member) and (channel.name in DRONE_HIVE_CHANNELS or is_identity_enforced(member)) and channel.category.name not in [HEXCORP_CONTROL_TOWER_CATEGORY, MODERATION_CATEGORY]:
+        LOGGER.info(f"{member.display_name} :: Identity is enforcable.")
+        return True
     else:
-        raise ValueError("identity_enforceable must be provided a context or channel object.")
+        LOGGER.info(f"{member.display_name} :: Identity is not enforcable.")
+        return False
