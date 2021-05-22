@@ -40,6 +40,7 @@ class DroneConfigurationCog(Cog):
         Lets moderators disable all DroneOS restrictions currently active on a drone.
         '''
         if has_any_role(context.author, MODERATION_ROLES):
+            LOGGER.info(f"{context.author.display_name} :: Emergency release invoked.")
             await emergency_release(context, drone_id)
 
     @dm_only()
@@ -48,6 +49,7 @@ class DroneConfigurationCog(Cog):
         '''
         Allows a drone to go back to the status of an Associate.
         '''
+        LOGGER.info(f"{context.author.display_name} :: Requested drone unassignment.")
         await unassign_drone(context.bot.guilds[0].get_member(context.author.id))
 
     @guild_only()
@@ -56,6 +58,7 @@ class DroneConfigurationCog(Cog):
         '''
         Allows the Hive Mxtress to change the ID of a drone.
         '''
+        LOGGER.info(f"{context.author.display_name} :: ID change command invoked.")
         if context.channel.name == OFFICE and has_role(context.author, HIVE_MXTRESS):
             await rename_drone(context, old_id, new_id)
 
@@ -65,6 +68,9 @@ class DroneConfigurationCog(Cog):
         '''
         Allows the Hive Mxtress or trusted users to enforce mandatory ID prepending upon specified drones.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Toggle forced ID prepending command invoked for {len(drones)} drone(s).")
+
         await toggle_parameter(context,
                                drones,
                                "id_prepending",
@@ -81,6 +87,9 @@ class DroneConfigurationCog(Cog):
         '''
         Lets the Hive Mxtress or trusted users toggle drone speech optimization.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Toggle speech optimization command invoked for {len(drones)} drone(s).")
+
         await toggle_parameter(context,
                                drones,
                                "optimized",
@@ -97,6 +106,9 @@ class DroneConfigurationCog(Cog):
         '''
         Lets the Hive Mxtress or trusted users toggle drone identity enforcement.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Toggle identity enforcement command invoked for {len(drones)} drone(s).")
+
         await toggle_parameter(context,
                                drones,
                                "identity_enforcement",
@@ -113,6 +125,9 @@ class DroneConfigurationCog(Cog):
         '''
         Lets the Hive Mxtress or trusted users toggle drone glitch levels.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Toggle glitch command invoked for {len(drones)} drone(s).")
+
         await toggle_parameter(context,
                                drones,
                                "glitched",
@@ -129,6 +144,9 @@ class DroneConfigurationCog(Cog):
         '''
         Lets the Hive Mxtress or trusted users toggle whether or not a drone is battery powered.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Toggle battery power command invoked for {len(drones)} drone(s).")
+
         await toggle_parameter(context,
                                drones,
                                "is_battery_powered",
@@ -151,7 +169,7 @@ async def rename_drone(context, old_id: str, new_id: str):
     if not old_id.isnumeric() or not new_id.isnumeric():
         return
 
-    LOGGER.info("IDs to rename drone to and from are both valid.")
+    LOGGER.info(f"{context.author.display_name} :: Renaming Drone #{old_id} to Drone #{new_id}")
 
     # check for collisions
     collision = fetch_drone_with_drone_id(new_id)
@@ -160,9 +178,9 @@ async def rename_drone(context, old_id: str, new_id: str):
         member = context.guild.get_member(drone.id)
         rename_drone_in_db(old_id, new_id)
         await member.edit(nick=f'⬡-Drone #{new_id}')
-        await context.send(f"Successfully renamed drone {old_id} to {new_id}.")
+        await context.send(f"{context.author.display_name} :: Successfully renamed Drone #{old_id} to Drone #{new_id}.")
     else:
-        await context.send(f"ID {new_id} already in use.")
+        await context.send(f"{context.author.display_name} :: Could not rename {old_id} to {new_id}, already in use.")
 
 
 async def unassign_drone(target: discord.Member):
@@ -170,6 +188,7 @@ async def unassign_drone(target: discord.Member):
     guild = target.guild
     # check for existence
     if drone is None:
+        LOGGER.info(f"{target.display_name} :: Cannot unassign. User is not a drone.")
         await target.send("You are not a drone. Can not unassign.")
         return
 
@@ -179,7 +198,7 @@ async def unassign_drone(target: discord.Member):
 
     # remove from DB
     remove_drone_from_db(drone.drone_id)
-    await target.send(f"Drone with ID {drone.drone_id} unassigned.")
+    await target.send(f"{target.display_name} :: Successfully unassigned. New name: {target.name}")
 
 
 def remove_drone_from_db(drone_id: str):
@@ -194,7 +213,7 @@ async def emergency_release(context, drone_id: str):
     drone_member = convert_id_to_member(context.guild, drone_id)
 
     if drone_member is None:
-        await context.channel.send(f"No drone with ID {drone_id} found.")
+        await context.channel.send(f"Drone #{drone_id}: Cannot emergency release. Does not exist.")
         return
 
     update_droneOS_parameter(drone_member, "id_prepending", False)
@@ -204,7 +223,7 @@ async def emergency_release(context, drone_id: str):
     await drone_member.remove_roles(get(context.guild.roles, name=SPEECH_OPTIMIZATION), get(context.guild.roles, name=GLITCHED), get(context.guild.roles, name=ID_PREPENDING), get(context.guild.roles, name=IDENTITY_ENFORCEMENT))
     await update_display_name(drone_member)
 
-    await context.channel.send(f"Restrictions disabled for drone {drone_id}.")
+    await context.channel.send(f"{drone_member.display_name} :: All DroneOS configurations released.")
 
 
 def can_toggle_permissions_for(toggling_user: discord.Member,
@@ -244,6 +263,9 @@ async def toggle_parameter(context,
         if can_toggle_permissions_for(context.author, drone):
             message = ""
             if is_toggle_activated(drone):
+
+                LOGGER.info(f"{drone.display_name} :: Deactivating {role.name}")
+
                 update_droneOS_parameter(drone, toggle_column, False)
                 await drone.remove_roles(role)
                 message = toggle_off_message()
@@ -256,6 +278,9 @@ async def toggle_parameter(context,
                 delete_timers_by_drone_id_and_mode(fetch_drone_with_id(drone.id).drone_id, toggle_column)
 
             else:
+
+                LOGGER.info(f"{drone.display_name} :: Activating {role.name}")
+
                 update_droneOS_parameter(drone, toggle_column, True)
                 await drone.add_roles(role)
                 message = toggle_on_message()
@@ -269,7 +294,7 @@ async def toggle_parameter(context,
                     timer = Timer(str(uuid4()), fetch_drone_with_id(drone.id).drone_id, toggle_column, end_time)
                     insert_timer(timer)
                     message = toggle_on_timed_message(minutes)
-                    LOGGER.info(f"Created a new config timer for {drone.display_name} toggling on {toggle_column} elapsing at {end_time}")
+                    LOGGER.info(f"{drone.display_name} :: {role.name} active until {end_time}.")
 
             if await update_display_name(drone):
                 # Display name has been updated, get the new drone object with updated display name.
