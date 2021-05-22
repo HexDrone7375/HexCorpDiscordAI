@@ -17,6 +17,9 @@ class DroneOsStatusCog(Cog):
         '''
         Displays all the DroneOS information you have access to about a drone.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Requested status of Drone #{drone_id}")
+
         response = get_status(drone_id, context.author.id)
         if response is None:
             await context.send(f"No drone with ID {drone_id} found.")

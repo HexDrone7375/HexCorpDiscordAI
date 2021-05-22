@@ -21,7 +21,7 @@ class AmplificationCog(Cog):
         Allows the Hive Mxtress to speak through other drones.
         '''
 
-        LOGGER.info(f"{context.author.display_name} :: Amplification command triggered. :: {message}")
+        LOGGER.info(f"{context.author.display_name} :: Amplification command invoked. :: {message}")
 
         if not has_role(context.author, HIVE_MXTRESS) or context.channel.name != OFFICE:
             return False

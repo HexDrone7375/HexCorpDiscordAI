@@ -32,7 +32,7 @@ class BatteryCog(commands.Cog):
         if not has_role(context.message.author, HIVE_MXTRESS):
             return
 
-        LOGGER.info(f"{context.author.display_name} :: Energize command envoked.")
+        LOGGER.info(f"{context.author.display_name} :: Energize command invoked.")
 
         for drone in set(context.message.mentions) | convert_ids_to_members(context.guild, drone_ids):
 
