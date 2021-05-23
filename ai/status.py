@@ -21,6 +21,9 @@ class StatusCog(Cog):
         '''
         A debug command, that displays information about the AI.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: AI status command invoked.")
+
         if context.channel.name == BOT_DEV_COMMS:
             await report_status(context, self.message_listeners)
 
@@ -61,3 +64,4 @@ async def report_status(context, listeners):
     embed.add_field(name='message listeners', value=get_list_of_listeners(listeners), inline=False)
 
     await context.send(embed=embed)
+    LOGGER.info(f"{context.author.display_name} :: AI status sent.")
