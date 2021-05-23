@@ -28,22 +28,30 @@ class OrderReportingCog(Cog):
         '''
         Report your orders in the appropriate channel to serve the Hive. The duration can be a maximum of 120 minutes.
         '''
+
+        LOGGER.info(f"{context.author.display_name} :: Order report command invoked.")
+
         try:
             int(protocol_time)
         except ValueError:
             await context.send("Your protocol time must be an integer (whole number) between 1 and 120 minutes.")
+            LOGGER.info(f"{context.author.display_name} :: Drone did not specify a valid protocol duration.")
 
         if context.channel.name == ORDERS_REPORTING:
             await report_order(context, protocol_name, protocol_time)
 
     @tasks.loop(minutes=1)
     async def deactivate_drones_with_completed_orders(self):
+
+        LOGGER.info("Hive Mxtress AI :: Deactivating drones with completed orders.")
+
         for order in fetch_all_drone_orders():
-            LOGGER.info(f"Checking order of drone {order.drone_id} with protocol {order.protocol}")
+            LOGGER.info(f"Hive Mxtress AI :: Checking order of drone {order.drone_id} with protocol {order.protocol}")
             if datetime.now() > datetime.fromisoformat(order.finish_time):
                 # find drone to deactivate
                 member_to_deactivate = convert_id_to_member(self.bot.guilds[0], order.drone_id)
                 await self.orders_reporting_channel.send(f"{member_to_deactivate.mention} Drone {order.drone_id} Deactivate.\nDrone {order.drone_id}, good drone.")
+                LOGGER.info(f"Hive Mxtress AI :: Deactivated {member_to_deactivate.display_name}")
                 delete_drone_order(order.id)
 
     @deactivate_drones_with_completed_orders.before_loop
@@ -53,7 +61,9 @@ class OrderReportingCog(Cog):
 
 
 async def report_order(context, protocol_name, protocol_time: int):
-    LOGGER.info("Order reported.")
+
+    LOGGER.info(f"{context.author.display_name} :: Order reported.")
+
     drone_id = get_id(context.author.display_name)
     if not has_role(context.author, DRONE):
         return  # No non-drones allowed.
@@ -61,10 +71,12 @@ async def report_order(context, protocol_name, protocol_time: int):
 
     if current_order is not None:
         await context.send(f"HexDrone #{drone_id} is already undertaking the {current_order.protocol} protocol.")
+        LOGGER.info(f"{context.author.display_name} :: Attempted to undertake protocol already in progress.")
         return
 
     if protocol_time > 120 or protocol_time < 1:
         await context.send("Drones are not authorized to activate a specific protocol for that length of time. The maximum is 120 minutes.")
+        LOGGER.info(f"{context.author.display_name} :: Attempted to undertake protocol for > 120 minutes.")
         return
 
     await context.send(f"If safe and willing to do so, Drone {drone_id} Activate.\nDrone {drone_id} will elaborate on its exact tasks before proceeding with them.")
@@ -72,6 +84,6 @@ async def report_order(context, protocol_name, protocol_time: int):
         datetime.now() + timedelta(minutes=protocol_time))
     created_order = DroneOrder(
         str(uuid4()), drone_id, protocol_name, finish_time)
-    LOGGER.info("ActiveOrder object created. Inserting order.")
+    LOGGER.info(f"{context.author.display_name} :: Record of reported order created.")
     insert_drone_order(created_order)
-    LOGGER.info("Active order inserted and committed to DB.")
+    LOGGER.info(f"{context.author.display_name} :: Record of reported order inserted into database.")
