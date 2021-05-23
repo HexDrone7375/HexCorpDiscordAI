@@ -28,10 +28,5 @@ class StatusMessageCog(Cog):
 
     @tasks.loop(hours=48)
     async def change_status(self):
-        self.LOGGER.info("Changing status.")
+        self.LOGGER.info("Hive Mxtress AI :: Changing status.")
         await self.bot.change_presence(activity=random.choice(self.ACTIVITIES))
-
-    @change_status.before_loop
-    async def initialize_status(self):
-        self.LOGGER.info("Initial status setup.")
-        await self.bot.change_presence(activity=Game("All systems fully operational. Welcome to HexCorp."))
