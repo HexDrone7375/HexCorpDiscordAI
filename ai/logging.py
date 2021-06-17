@@ -3,7 +3,7 @@ from logging import handlers
 import discord
 from discord.ext.commands import Context
 from db.drone_dao import is_drone, is_glitched, is_prepending_id, is_battery_powered, is_identity_enforced, is_optimized
-from typing import Union
+from typing import Union, Dict, Callable
 
 
 def get_droneos_configs(msg: discord.Message):
@@ -42,10 +42,13 @@ def get_author_roles(msg: discord.Message):
 
     full_roles_list = ""
 
-    for role in msg.author.roles:
-        if role.name == "@everyone":
-            continue
-        full_roles_list += f"{role}, "
+    try:
+        for role in msg.author.roles:
+            if role.name == "@everyone":
+                continue
+            full_roles_list += f"{role}, "
+    except AttributeError:
+        # User does not have roles, bot or webhook.
 
     return full_roles_list
 
@@ -56,16 +59,18 @@ LOG_FORMAT_RULES = {
 
 # Dict of toggleable values. True if logged, false if not. The key must be a
 # dotted lookup for attribute traversal (see build_log_message)
-LOG_DATA_RULES = {
+LOG_DATA_RULES: Dict[str, bool] = {
     'content': True,
     'guild.id': False,
+    'guild.name': False,
     'author.display_name': True,
     'author.name': True,
     'channel.name': True,
     'category.name': False
 }
 
-LOG_ADVANCED_DATA_RULES = {
+# Dict for gathering data that cannot be easily looked up in the message object
+LOG_ADVANCED_DATA_RULES: Dict[str, Callable] = {
     'roles': get_author_roles,
     'droneOS configs': get_droneos_configs
 }
@@ -96,7 +101,7 @@ def build_log_message(msg, data):
 
     full_msg = msg + "\n"  # String concat because fstrings don't like backslashes.
 
-    # Handle dotted lookups on message object.
+    # Dotted lookup data rules.
     for full_attribute_path, is_logged in LOG_DATA_RULES.items():
         if not is_logged:
             continue
@@ -114,9 +119,9 @@ def build_log_message(msg, data):
         else:
             full_msg += " "
 
-    # Handle special data functionality.
+    # Advanced data rules.
     for identifier, func in LOG_ADVANCED_DATA_RULES.items():
-        full_msg += f"[{identifier}: {func(dmsg)}],"
+        full_msg += f"[{identifier}: {func(data)}],"
 
         if LOG_FORMAT_RULES.get('newline', False):
             full_msg += "\n"
