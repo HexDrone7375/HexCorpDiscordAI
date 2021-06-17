@@ -2,10 +2,8 @@ from channels import HEXCORP_CONTROL_TOWER_CATEGORY, MODERATION_CATEGORY
 import discord
 from db.drone_dao import is_prepending_id
 import bot_utils
-import logging
+import ai.logging as LOGGER
 from bot_utils import COMMAND_PREFIX
-
-LOGGER = logging.getLogger('ai')
 
 
 async def check_if_prepending_necessary(message: discord.Message, message_copy=None):
@@ -14,9 +12,9 @@ async def check_if_prepending_necessary(message: discord.Message, message_copy=N
         if message.content.startswith(f"{drone_id} :: ") or message.content.startswith(COMMAND_PREFIX):
             return False
         else:
-            LOGGER.info(f"{message.author.display_name} :: Drone did not ID prepend when required.")
+            LOGGER.info("Drone did not ID prepend when required.", message)
             await message.delete()
-            LOGGER.info(f"{message.author.display_name} :: Message deleted.")
+            LOGGER.info("Message deleted.", message)
             return True
     else:
         return False
