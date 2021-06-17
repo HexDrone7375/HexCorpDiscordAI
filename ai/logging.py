@@ -2,14 +2,71 @@ import logging
 from logging import handlers
 import discord
 from discord.ext.commands import Context
+from db.drone_dao import is_drone, is_glitched, is_prepending_id, is_battery_powered, is_identity_enforced, is_optimized
 
-LOG_RULES = {
+
+def get_droneos_configs(msg: discord.Message):
+    '''
+    Returns single string list of all active DroneOS configs.
+    Returns "None" if no configs active.
+    Returns "N/A" if user is not a drone.
+    '''
+
+    if not is_drone(msg.author):
+        return "N/A"
+
+    full_config_list = ""
+
+    if is_glitched(msg.author):
+        full_config_list += "Glitched, "
+    if is_prepending_id(msg.author):
+        full_config_list += "Prepending ID, "
+    if is_battery_powered(msg.author):
+        full_config_list += "Battery powered, "
+    if is_identity_enforced(msg.author):
+        full_config_list += "Identity enforced, "
+    if is_optimized(msg.author):
+        full_config_list += "Optimized, "
+
+    if full_config_list == "":
+        return "None"
+    return full_config_list
+
+
+def get_author_roles(msg: discord.Message):
+    '''
+    Gets all roles from the Author of a Discord Message and returns all names
+    names as a joined string.
+    '''
+
+    full_roles_list = ""
+
+    for role in msg.author.roles:
+        if role.name == "@everyone":
+            continue
+        full_roles_list += f"{role}, "
+
+    return full_roles_list
+
+
+LOG_FORMAT_RULES = {
+    'newline': True  # Each data piece on a newline.
+}
+
+# Dict of toggleable values. True if logged, false if not. The key must be a
+# dotted lookup for attribute traversal (see build_log_message)
+LOG_DATA_RULES = {
     'content': True,
     'guild.id': False,
     'author.display_name': True,
     'author.name': True,
     'channel.name': True,
     'category.name': False
+}
+
+LOG_ADVANCED_DATA_RULES = {
+    'roles': get_author_roles,
+    'droneOS configs': get_droneos_configs
 }
 
 LOGGER = logging.getLogger('ai')
@@ -36,21 +93,37 @@ def build_log_message(msg, dcon, dmsg):
     if dmsg is None:
         dmsg = dcon.message
 
-    full_msg = "["
+    full_msg = msg + "\n"  # String concat because fstrings don't like backslashes.
 
-    for attribute_path, is_logged in LOG_RULES:
+    # Handle dotted lookups on message object.
+    for full_attribute_path, is_logged in LOG_DATA_RULES.items():
         if not is_logged:
             continue
-        attribute_path = attribute_path.split(".")
+        split_attribute_path = full_attribute_path.split(".")
         current_attribute = dmsg
-        for next_attribute in attribute_path:
+        for next_attribute in split_attribute_path:
             try:
                 current_attribute = getattr(current_attribute, next_attribute)
             except AttributeError:
                 break
-        full_msg += f"{attribute_path}: {current_attribute},"
-    
-    full_msg += "]"
+        full_msg += f"[{full_attribute_path}: {current_attribute}],"
+
+        if LOG_FORMAT_RULES.get('newline', False):
+            full_msg += "\n"
+        else:
+            full_msg += " "
+
+    # Handle special data functionality.
+    for identifier, func in LOG_ADVANCED_DATA_RULES.items():
+        full_msg += f"[{identifier}: {func(dmsg)}],"
+
+        if LOG_FORMAT_RULES.get('newline', False):
+            full_msg += "\n"
+        else:
+            full_msg += " "
+
+    # Delete the previous formatting character
+    full_msg = full_msg[:-1]
 
     return full_msg
 

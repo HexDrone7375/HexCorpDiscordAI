@@ -158,6 +158,8 @@ async def on_message(message: discord.Message):
         await bot.process_commands(message)
         return
 
+    LOGGER.info("New message.", dmsg=message)
+
     message_copy = MessageCopy(message.content, message.author.display_name, message.author.avatar_url, message.attachments)
 
     LOGGER.info(f"{message.author.display_name} :: New message :: {message.content}")
