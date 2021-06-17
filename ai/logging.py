@@ -1,3 +1,4 @@
+from ai.data_objects import MessageCopy
 import logging
 from logging import handlers
 import discord
@@ -69,8 +70,7 @@ LOG_FORMAT_RULES = {
     'newline': True  # Each data piece on a newline.
 }
 
-# Dict of toggleable values. True if logged, false if not. The key must be a
-# dotted lookup for attribute traversal (see build_log_message)
+# Dict of message object attributes. Value is true if logged.
 LOG_DATA_RULES: Dict[str, bool] = {
     'content': True,
     'guild.id': False,
@@ -80,6 +80,7 @@ LOG_DATA_RULES: Dict[str, bool] = {
     'channel.name': True,
     'category.name': False
 }
+
 
 # Dict for gathering data that cannot be easily looked up in the message object
 LOG_ADVANCED_DATA_RULES: Dict[str, Callable] = {
@@ -107,7 +108,7 @@ def set_up_logger():
     LOGGER.setLevel(logging.DEBUG)
 
 
-def build_log_message(msg, data):
+def build_log_message(msg, data: Union[Context, discord.Message], copy: MessageCopy = None):
     # If have a message, use that, otherwise get the message object from the context.
     if type(data) is Context:
         data = data.message
@@ -141,41 +142,52 @@ def build_log_message(msg, data):
         else:
             full_msg += " "
 
+    # Message copy logging
+    if copy is not None:
+        for attribute in dir(copy):
+            if not attribute.startswith("__"):
+                full_msg += f"[message_copy.{attribute}: {getattr(copy, attribute)}],"
+
+                if LOG_FORMAT_RULES.get('newline', False):
+                    full_msg += "\n"
+                else:
+                    full_msg += " "
+
     # Delete the previous formatting character
     full_msg = full_msg[:-1]
 
     return full_msg
 
 
-def info(msg: str, data: Union[Context, discord.Message] = None):
+def info(msg: str, data: Union[Context, discord.Message] = None, copy: MessageCopy = None):
     '''
     Used for logging events ("Transformed status code to status message.")
     '''
     if data is None:
         LOGGER.info(msg)
     else:
-        LOGGER.info(build_log_message(msg, data))
+        LOGGER.info(build_log_message(msg, data, copy))
 
 
-def debug(msg: str, data: Union[Context, discord.Message] = None):
+def debug(msg: str, data: Union[Context, discord.Message] = None, copy: MessageCopy = None):
     '''
     Used for additional data ("Array length: 30")
     '''
     if data is None:
         LOGGER.debug(msg)
     else:
-        LOGGER.debug(build_log_message(msg, data))
+        LOGGER.debug(build_log_message(msg, data, copy))
 
 
-def warn(msg: str, data: Union[Context, discord.Message] = None):
+def warn(msg: str, data: Union[Context, discord.Message] = None, copy: MessageCopy = None):
     if data is None:
         LOGGER.warn(msg)
     else:
-        LOGGER.warn(build_log_message(msg, data))
+        LOGGER.warn(build_log_message(msg, data, copy))
 
 
-def error(msg: str, data: Union[Context, discord.Message] = None):
+def error(msg: str, data: Union[Context, discord.Message] = None, copy: MessageCopy = None):
     if data is None:
         LOGGER.error(msg)
     else:
-        LOGGER.error(build_log_message(msg, data))
+        LOGGER.error(build_log_message(msg, data, copy))
