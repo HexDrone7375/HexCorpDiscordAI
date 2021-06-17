@@ -44,9 +44,9 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
     avatar_differs = original.author.avatar_url != copy.avatar_url
     attachments_differ = original.attachments != copy.attachments
     if any([content_differs, display_name_differs, avatar_differs, attachments_differ]):
-        LOGGER.info(f"{original.author.display_name} :: Message different from original. Proxying.")
+        LOGGER.info("Message different from original. Proxying.", original)
 
-        LOGGER.info(f"{original.author.display_name} :: Converting {len(copy.attachments)} attachments")
+        LOGGER.info(f"Converting {len(copy.attachments)} attachments into discord.File objects", original)
         # Convert available Attachment objects into File objects.
         attachments_as_files = []
         for attachment in copy.attachments:
@@ -58,7 +58,7 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
 
         embed = None
         if original.reference:
-            LOGGER.info(f"{original.author.display_name} :: User replied to message. Creating reply embed.")
+            LOGGER.info("Users message is a reply. Creating reply embed.", original)
             referenced_message: discord.Message = original.reference.resolved
             reply_text = f"[Reply to]({referenced_message.jump_url}): {referenced_message.content}"
             embed = discord.Embed(color=0xff66ff, description=reply_text)
@@ -72,7 +72,7 @@ async def webhook_if_message_altered(original: discord.Message, copy: MessageCop
                                        channel=original.channel,
                                        webhook=None,
                                        embed=embed)
-        LOGGER.info(f"{original.author.display_name} :: Message proxied.")
+        LOGGER.info("Message proxied.", original)
         return
-    LOGGER.info(f"{original.author.display_name} :: Message unchanged. Not proxying.")
+    LOGGER.info("Message unchanged. Not proxying.", original)
     return
