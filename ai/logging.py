@@ -38,18 +38,18 @@ def get_author_roles(msg: discord.Message):
     '''
     Gets all roles from the Author of a Discord Message and returns all names
     names as a joined string.
+    Returns "N/A" if user is a bot.
     '''
+
+    if msg.author.bot:
+        return "N/A"
 
     full_roles_list = ""
 
-    try:
-        for role in msg.author.roles:
-            if role.name == "@everyone":
-                continue
-            full_roles_list += f"{role}, "
-    except AttributeError:
-        # User does not have roles, bot or webhook.
-        return "N/A"
+    for role in msg.author.roles:
+        if role.name == "@everyone":
+            continue
+        full_roles_list += f"{role}, "
 
     return full_roles_list
 
@@ -66,6 +66,7 @@ LOG_DATA_RULES: Dict[str, bool] = {
     'guild.name': False,
     'author.display_name': True,
     'author.name': True,
+    'author.bot': True,
     'channel.name': True,
     'category.name': False
 }
