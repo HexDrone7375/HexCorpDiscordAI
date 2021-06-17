@@ -3,6 +3,7 @@ from logging import handlers
 import discord
 from discord.ext.commands import Context
 from db.drone_dao import is_drone, is_glitched, is_prepending_id, is_battery_powered, is_identity_enforced, is_optimized
+from typing import Union
 
 
 def get_droneos_configs(msg: discord.Message):
@@ -88,10 +89,10 @@ def set_up_logger():
     LOGGER.setLevel(logging.DEBUG)
 
 
-def build_log_message(msg, dcon, dmsg):
+def build_log_message(msg, data):
     # If have a message, use that, otherwise get the message object from the context.
-    if dmsg is None:
-        dmsg = dcon.message
+    if type(data) is Context:
+        data = data.message
 
     full_msg = msg + "\n"  # String concat because fstrings don't like backslashes.
 
@@ -100,7 +101,7 @@ def build_log_message(msg, dcon, dmsg):
         if not is_logged:
             continue
         split_attribute_path = full_attribute_path.split(".")
-        current_attribute = dmsg
+        current_attribute = data
         for next_attribute in split_attribute_path:
             try:
                 current_attribute = getattr(current_attribute, next_attribute)
@@ -128,29 +129,35 @@ def build_log_message(msg, dcon, dmsg):
     return full_msg
 
 
-def info(msg, dcon: Context = None, dmsg: discord.Message = None):
+def info(msg: str, data: Union[Context, discord.Message] = None):
     '''
     Used for logging events ("Transformed status code to status message.")
     '''
-    if dcon is None and dmsg is None:
-        # Lets you log outside of standard events like in main.py's initial setup.
+    if data is None:
         LOGGER.info(msg)
     else:
-        LOGGER.info(build_log_message(msg, dcon, dmsg))
+        LOGGER.info(build_log_message(msg, data))
 
 
-def debug(msg, dcon: Context = None, dmsg: discord.Message = None):
+def debug(msg: str, data: Union[Context, discord.Message] = None):
     '''
-    Used for logging additional data ("Array length: 30")
+    Used for additional data ("Array length: 30")
     '''
-    pass
+    if data is None:
+        LOGGER.debug(msg)
+    else:
+        LOGGER.debug(build_log_message(msg, data))
 
 
-def warn(msg, dcon: Context = None, dmsg: discord.Message = None):
-    # Unimplemented
-    pass
+def warn(msg: str, data: Union[Context, discord.Message] = None):
+    if data is None:
+        LOGGER.warn(msg)
+    else:
+        LOGGER.warn(build_log_message(msg, data))
 
 
-def error(msg, dcon: Context = None, dmsg: discord.Message = None):
-    # Unimplemented
-    pass
+def error(msg: str, data: Union[Context, discord.Message] = None):
+    if data is None:
+        LOGGER.error(msg)
+    else:
+        LOGGER.error(build_log_message(msg, data))
