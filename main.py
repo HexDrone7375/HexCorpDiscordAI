@@ -1,8 +1,7 @@
 # Core
 import discord
 import sys
-import logging
-from logging import handlers
+import ai.logging as LOGGER
 from discord.ext.commands import Bot, MissingRequiredArgument
 from traceback import TracebackException
 from datetime import datetime, timedelta
@@ -45,25 +44,6 @@ from db import drone_dao
 from resources import DRONE_AVATAR, HIVE_MXTRESS_AVATAR, HEXCORP_AVATAR
 # Data objects
 from ai.data_objects import MessageCopy
-
-LOGGER = logging.getLogger('ai')
-
-
-def set_up_logger():
-    # Logging setup
-    formatter = logging.Formatter(fmt='%(asctime)s.%(msecs)03d :: %(levelname)s :: %(message)s', datefmt='%Y-%m-%d :: %H:%M:%S')
-
-    log_file_handler = handlers.TimedRotatingFileHandler(
-        filename='ai.log', encoding='utf-8', backupCount=6, when='D', interval=7)
-    log_file_handler.setFormatter(formatter)
-
-    logging.basicConfig(level=logging.WARNING)
-    root_logger = logging.getLogger()
-    root_logger.addHandler(log_file_handler)
-
-    logger = logging.getLogger('ai')
-    logger.setLevel(logging.DEBUG)
-
 
 # Setup bot
 intents = discord.Intents.default()
@@ -129,6 +109,9 @@ timing_agnostic_tasks = [status_message_cog.change_status]
 
 @bot.command(usage=f'{bot.command_prefix}help')
 async def help(context):
+
+    LOGGER.info(f"{context.author.display_name} :: Requested help menu.")
+
     '''
     Displays this help.
     '''
@@ -177,29 +160,30 @@ async def on_message(message: discord.Message):
 
     message_copy = MessageCopy(message.content, message.author.display_name, message.author.avatar_url, message.attachments)
 
-    LOGGER.info("Beginning message listener stack execution.")
+    LOGGER.info(f"{message.author.display_name} :: New message :: {message.content}")
     # use the listeners for bot messages or user messages
     applicable_listeners = bot_message_listeners if message.author.bot else message_listeners
     for listener in applicable_listeners:
-        LOGGER.info(f"Executing: {listener}")
+        LOGGER.info(f"{message.author.display_name} :: Executing listener :: {listener}")
         if await listener(message, message_copy):  # Return early if any listeners return true.
             return
-    LOGGER.info("End of message listener stack.")
+    LOGGER.info(f"{message.author.display_name} :: End of message listener stack.")
 
-    LOGGER.info("Checking for need to webhook.")
     await webhook.webhook_if_message_altered(message, message_copy)
 
-    LOGGER.info("Processing additional commands.")
+    LOGGER.info(f"{message.author.display_name} :: Processing additional commands.")
     await bot.process_commands(message)
 
 
 @bot.event
 async def on_member_join(member: discord.Member):
+    LOGGER.info(f"{member.display_name} :: New member joined.")
     await join.on_member_join(member)
 
 
 @bot.event
 async def on_member_remove(member: discord.Member):
+    LOGGER.info(f"{member.display_name} :: Member has left HexCorp.")
     # remove entry from DB if member was drone
     drone = drone_dao.fetch_drone_with_id(member.id)
     if drone:
@@ -211,41 +195,39 @@ async def on_member_remove(member: discord.Member):
 
 @bot.event
 async def on_ready():
-    LOGGER.info("Hive Mxtress AI online.")
+    LOGGER.info("Hive Mxtress AI :: Online.")
 
-    LOGGER.info("Inserting any new drones into database.")
+    LOGGER.info("Hive Mxtress AI :: Inserting any new drones into database.")
     drone_dao.add_new_drone_members(bot.guilds[0].members)
 
-    LOGGER.info("Starting timing agnostic tasks.")
+    LOGGER.info("Hive Mxtress AI :: Starting timing agnostic tasks.")
     for task in timing_agnostic_tasks:
         if not task.is_running():
             task.start()
         elif task.has_failed():
             task.restart()
 
-    LOGGER.info("Awaiting start of next minute to begin every-minute tasks.")
     current_time = datetime.now()
     target_time = current_time + timedelta(minutes=1)
     target_time = target_time.replace(second=0)
-    LOGGER.info(f"Scheduled to start minutely tasks at {target_time}")
+    LOGGER.info(f"Hive Mxtress AI :: Scheduled to start every-minute tasks at {target_time}")
     await asyncio.sleep((target_time - current_time).total_seconds())
 
-    LOGGER.info("Starting all every-minute tasks.")
+    LOGGER.info("Hive Mxtress AI :: Starting all every-minute tasks.")
     for task in minute_tasks:
         if not task.is_running():
             task.start()
         elif task.has_failed():
             task.restart()
 
-    LOGGER.info("Awaiting start of next hour to begin every-hour tasks.")
     current_time = datetime.now()
     if current_time.minute != 0:
         target_time = current_time + timedelta(hours=1)
         target_time = target_time.replace(minute=0, second=0)
-        LOGGER.info(f"Scheduled to start hourly tasks at {target_time}")
+        LOGGER.info(f"Hive Mxtress AI :: Scheduled to start hourly tasks at {target_time}")
         await asyncio.sleep((target_time - current_time).total_seconds())
 
-    LOGGER.info("Starting all every-hour tasks.")
+    LOGGER.info("Hive Mxtress AI :: Starting all every-hour tasks.")
     for task in hour_tasks:
         if not task.is_running():
             task.start()
@@ -257,8 +239,8 @@ async def on_ready():
 async def on_command_error(context, error):
     if isinstance(error, MissingRequiredArgument):
         # missing arguments should not be that noisy and can be reported to the user
-        LOGGER.info(f"Missing parameter {error.param.name} reported to user.")
         await context.send(f"`{error.param.name}` is a required argument that is missing.")
+        LOGGER.info(f"Hive Mxtress AI :: Missing parameter {error.param.name} reported to user.")
     else:
         LOGGER.error(f"!!! Exception caught in {context.command} command !!!")
         LOGGER.info("".join(TracebackException(type(error), error, error.__traceback__, limit=None).format(chain=True)))
@@ -272,7 +254,7 @@ async def on_error(event, *args, **kwargs):
 
 
 def main():
-    set_up_logger()
+    LOGGER.set_up_logger()
     database.prepare()
     bot.run(sys.argv[1])
 
