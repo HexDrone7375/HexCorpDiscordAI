@@ -49,6 +49,7 @@ def get_author_roles(msg: discord.Message):
             full_roles_list += f"{role}, "
     except AttributeError:
         # User does not have roles, bot or webhook.
+        return "N/A"
 
     return full_roles_list
 
