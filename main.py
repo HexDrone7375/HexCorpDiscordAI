@@ -158,9 +158,9 @@ async def on_message(message: discord.Message):
         await bot.process_commands(message)
         return
 
-    LOGGER.info("New message.", message)
-
     message_copy = MessageCopy(message.content, message.author.display_name, message.author.avatar_url, message.attachments)
+
+    LOGGER.info("New message.", message, message_copy)
 
     # use the listeners for bot messages or user messages
     applicable_listeners = bot_message_listeners if message.author.bot else message_listeners
@@ -168,11 +168,14 @@ async def on_message(message: discord.Message):
         LOGGER.info(f"Executing listener :: {listener.__name__}", message)
         if await listener(message, message_copy):  # Return early if any listeners return true.
             return
-    LOGGER.info(f"Finished executing listener stack.", message)
+    LOGGER.info("Finished executing listener stack.", message, message_copy)
+
+    if message.author.bot:
+        return  # Do not proxy or process the commands of bot messages.
 
     await webhook.webhook_if_message_altered(message, message_copy)
 
-    LOGGER.info(f"Processing commands.", message)
+    LOGGER.info("Processing commands.", message)
     await bot.process_commands(message)
 
 
