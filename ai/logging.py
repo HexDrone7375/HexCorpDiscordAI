@@ -6,6 +6,17 @@ from db.drone_dao import is_drone, is_glitched, is_prepending_id, is_battery_pow
 from typing import Union, Dict, Callable
 
 
+def get_full_username(msg: discord.Message):
+    '''
+    Returns author's username + discriminator.
+    Returns "BOT" if bot.
+    '''
+    if msg.author.bot:
+        return "BOT"
+
+    return str(msg.author)
+
+
 def get_droneos_configs(msg: discord.Message):
     '''
     Returns single string list of all active DroneOS configs.
@@ -38,11 +49,11 @@ def get_author_roles(msg: discord.Message):
     '''
     Gets all roles from the Author of a Discord Message and returns all names
     names as a joined string.
-    Returns "N/A" if user is a bot.
+    Returns "BOT" if user is a bot.
     '''
 
     if msg.author.bot:
-        return "N/A"
+        return "BOT"
 
     full_roles_list = ""
 
@@ -65,7 +76,6 @@ LOG_DATA_RULES: Dict[str, bool] = {
     'guild.id': False,
     'guild.name': False,
     'author.display_name': True,
-    'author.name': True,
     'author.bot': True,
     'channel.name': True,
     'category.name': False
@@ -74,7 +84,8 @@ LOG_DATA_RULES: Dict[str, bool] = {
 # Dict for gathering data that cannot be easily looked up in the message object
 LOG_ADVANCED_DATA_RULES: Dict[str, Callable] = {
     'roles': get_author_roles,
-    'droneOS configs': get_droneos_configs
+    'droneOS configs': get_droneos_configs,
+    'username': get_full_username,
 }
 
 LOGGER = logging.getLogger('ai')
