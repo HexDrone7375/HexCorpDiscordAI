@@ -110,7 +110,7 @@ timing_agnostic_tasks = [status_message_cog.change_status]
 @bot.command(usage=f'{bot.command_prefix}help')
 async def help(context):
 
-    LOGGER.info(f"{context.author.display_name} :: Requested help menu.")
+    LOGGER.info(f"Requested help menu.", context)
 
     '''
     Displays this help.
@@ -162,18 +162,17 @@ async def on_message(message: discord.Message):
 
     message_copy = MessageCopy(message.content, message.author.display_name, message.author.avatar_url, message.attachments)
 
-    LOGGER.info(f"{message.author.display_name} :: New message :: {message.content}")
     # use the listeners for bot messages or user messages
     applicable_listeners = bot_message_listeners if message.author.bot else message_listeners
     for listener in applicable_listeners:
-        LOGGER.info(f"{message.author.display_name} :: Executing listener :: {listener}")
+        LOGGER.info(f"Executing listener :: {listener.__name__}", message)
         if await listener(message, message_copy):  # Return early if any listeners return true.
             return
-    LOGGER.info(f"{message.author.display_name} :: End of message listener stack.")
+    LOGGER.info(f"Finished executing listener stack.", message)
 
     await webhook.webhook_if_message_altered(message, message_copy)
 
-    LOGGER.info(f"{message.author.display_name} :: Processing additional commands.")
+    LOGGER.info(f"Processing commands.", message)
     await bot.process_commands(message)
 
 
